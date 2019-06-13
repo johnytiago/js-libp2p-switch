@@ -3,6 +3,7 @@
 /* eslint no-warning-comments: off */
 
 const parallel = require('async/parallel')
+const multiaddr = require('multiaddr')
 const once = require('once')
 const debug = require('debug')
 const log = debug('libp2p:switch:transport')
@@ -154,6 +155,14 @@ class TransportManager {
             return done(err)
           }
           listener.removeListener('error', done)
+
+         // HACK check if it's an encapsulated address that acts as proxy
+          // if so, bind to one address and advertise other
+          if (ma.protoNames().filter(p => p === 'tcp').length > 1) {
+            freshMultiaddrs.push(multiaddr(`/${ma.toString().split('/').slice(5).join('/')}`))
+            return done()
+          }
+
           listener.getAddrs((err, addrs) => {
             if (err) {
               return done(err)
